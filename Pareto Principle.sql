@@ -51,5 +51,3 @@ from cte_product_sales
 group by product_id, product_sales
 )
 select * from cte_final where 1=1 and running_sum <= "80_p_total_sales";
-
-select 233/1010;
