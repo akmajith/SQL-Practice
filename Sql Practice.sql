@@ -373,3 +373,41 @@ LEFT JOIN test_Customers c
     ON o.Customer_ID = c.Customer_ID
 AND c.customer_id = 101;
 
+
+select e.employee_name as emp_name, m.employee_name as mgr_name from test_employees e
+left join test_employees m
+on e.manager_id = m.employee_id
+where m.employee_name is not null; 
+
+
+
+
+
+
+CREATE OR REPLACE TABLE Practice_Customers (
+    Customer_ID INT,
+    Customer_Name VARCHAR(100),
+    city VARCHAR(100)
+);
+
+INSERT INTO Practice_Customers (Customer_ID, Customer_Name, city)
+VALUES
+    (101, 'Amit', 'Mumbai'),
+    (102, 'Rahul', 'Mumbai'),
+    (103, 'Priya', 'Pune'),
+    (104, 'Neha', 'Mumbai'),
+    (105, 'Karan', 'Pune');
+
+select * from practice_customers;
+
+
+select pc1.customer_name, pc2.customer_name, pc1.city from practice_customers pc1
+left join practice_customers pc2  
+on pc1.city = pc2.city
+where  pc1.customer_id > pc2.customer_id;
+
+
+select pc1.customer_name, pc2.customer_name, pc1.city from practice_customers pc1
+inner join practice_customers pc2  
+on pc1.city = pc2.city
+where  pc1.customer_id != pc2.customer_id;
