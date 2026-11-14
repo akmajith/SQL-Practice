@@ -411,3 +411,182 @@ select pc1.customer_name, pc2.customer_name, pc1.city from practice_customers pc
 inner join practice_customers pc2  
 on pc1.city = pc2.city
 where  pc1.customer_id != pc2.customer_id;
+
+CREATE OR REPLACE TABLE BI_Customers (
+    Customer_ID INT,
+    Customer_Name VARCHAR(100)
+);
+
+INSERT INTO BI_Customers (Customer_ID, Customer_Name)
+VALUES
+    (101, 'Amit'),
+    (102, 'Rahul'),
+    (103, 'Priya');
+
+
+CREATE OR REPLACE TABLE BI_Orders (
+    Order_ID INT,
+    Customer_ID INT
+);
+
+INSERT INTO BI_Orders (Order_ID, Customer_ID)
+VALUES
+    (1, 101),
+    (2, 101),
+    (3, 102),
+    (4, 103);
+
+
+CREATE OR REPLACE TABLE BI_Order_Items (
+    Order_Item_ID INT,
+    Order_ID INT,
+    Product VARCHAR(100),
+    Quantity INT,
+    Unit_Price NUMBER(10,2)
+);
+
+INSERT INTO BI_Order_Items
+    (Order_Item_ID, Order_ID, Product, Quantity, Unit_Price)
+VALUES
+    (1, 1, 'Laptop', 1, 50000),
+
+
+ SELECT * FROM BI_Customers;
+SELECT * FROM BI_Orders;
+SELECT * FROM BI_Order_Items;
+
+select bc.customer_name, SUM(boi.quantity * boi.unit_price) as revenue, count(distinct boi.order_id) as order_count
+from bi_customers bc
+left join bi_orders bo on bc.customer_id = bo.customer_id
+left join bi_order_items boi on boi.order_id = bo.order_id
+group by all;
+
+
+INSERT INTO BI_Customers (Customer_ID, Customer_Name)
+VALUES (104, 'Neha');
+
+
+select * from bi_customers bc
+left join bi_orders bo on bc.customer_id = bo.customer_id
+where bo.customer_id is  null;
+
+
+select * from bi_customers bc
+where not exists (select 1 from bi_orders bo where bc.customer_id = bo.customer_id);
+
+
+
+select bc.customer_id, count(bo.order_id) from bi_customers bc
+left join bi_orders bo on bc.customer_id = bo.customer_id
+where bo.customer_id is not  null
+group by bc.customer_id
+having count(bo.order_id) >= 1;
+
+
+select bc.customer_id, bc.customer_name 
+from bi_customers bc
+inner join bi_orders bo on bc.customer_id = bo.customer_id;
+
+select * from bi_customers bc
+where exists (select 1 from bi_orders bo where bc.customer_id = bo.customer_id);
+
+
+SELECT
+    order_id,
+    customer_id,
+    amount,
+    SUM(amount) OVER (
+        PARTITION BY customer_id order by amount desc
+    ) AS customer_total_sales
+FROM practice_orders
+order by customer_id asc;
+
+with cte_data as
+(
+select customer_id, rank() over (partition by customer_id order by amount desc) as rnk 
+from practice_orders
+)
+select * from cte_data
+where rnk in  (1,2);
+
+select * from practice_orders;
+
+
+CREATE OR REPLACE TABLE practice_customers2 (
+    customer_id INT,
+    customer_name VARCHAR(100),
+    email VARCHAR(255)
+);
+
+INSERT INTO practice_customers2
+    (customer_id, customer_name, email)
+VALUES
+    (101, 'Amit', 'amit@gmail.com'),
+    (102, 'Rahul', 'rahul@gmail.com'),
+    (103, 'Amit', 'amit@gmail.com'),
+    (104, 'Priya', 'priya@gmail.com'),
+    (105, 'Amit', 'amit@gmail.com');
+
+
+
+select email, count (email) from practice_customers2
+group by email
+having count(email) > 1;
+
+with cte_duplicates as
+(
+select *, row_number() over (partition by email order by customer_id asc) as rn from practice_customers2
+)
+select * from cte_duplicates where rn > 1 ;
+
+
+
+select customer_id, sum(amount)  as sales_per_customer,
+SUM(sum(amount)) over () as total_company_sales
+from practice_orders
+group by customer_id
+order by customer_id asc;
+
+select * from practice_orders;
+
+with cte_data as(
+select date_trunc(month, order_date) as order_month, sum(sales) sales_month 
+from orders
+group by order_month
+)
+select *, lag(sales_month) over (order by order_month asc) as prev_month_sales,
+nullif(prev_month_sales, 0) as previous_month_sales,
+((sales_month - previous_month_sales)/ previous_month_sales) * 100 as per_grth
+from cte_data;
+
+
+with cte_data as(
+select date_trunc(month, order_date) as order_month, sum(sales) sales_month 
+from orders
+group by order_month
+--order by sales_month asc
+)
+select *, sum(sales_month) over (order by order_month asc) from cte_data;
+--order by order_month asc;
+
+with cte_data as(
+select date_trunc(month, order_date) as order_month, sum(sales) sales_month 
+from orders
+group by order_month
+)
+select *, sum(sales_month) over (order by order_month asc rows between unbounded preceding and current row) 
+from cte_data
+order by order_month asc;
+
+
+
+select customer_id, order_id, order_date, sales, 
+sum(sales) over (partition by order_id) as order_sales,
+SUM(sales) OVER (PARTITION BY order_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as cumulative_order_sales,
+--SUM(sales) OVER (PARTITION BY order_id ORDER BY order_date RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+--sum(sales) over (partition by customer_id, order_id, order_date order by order_date) as cumulative_total,
+from orders
+order by customer_id, order_id, order_date, sales;
+
+
+select * from orders;
